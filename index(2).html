@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<script
+src=https://cdn.emailjs.com/dist/email.min.js></script>
+<script>
+Emailjs.init(“A7IhyaA7Ughtu7dgv”)；
+//大概長得會像這樣EX：ＤSfispXXXXX
+
+</script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>色系選擇器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 30px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); text-align: center; max-width: 900px; width: 100%; }
+        .header { margin-bottom: 30px; }
+        .title { font-size: 28px; color: #333; margin-bottom: 10px; font-weight: bold; }
+        .subtitle { font-size: 16px; color: #666; margin-bottom: 15px; }
+        .multi-select-hint { background: #e8f4f8; border: 1px solid #b3d9e6; border-radius: 8px; padding: 10px; font-size: 14px; color: #2c5f7a; margin-bottom: 20px; }
+        .progress { background: #e0e0e0; border-radius: 10px; height: 8px; overflow: hidden; margin-bottom: 20px; }
+        .progress-bar { background: linear-gradient(90deg, #8B4513, #D2B48C); height: 100%; border-radius: 10px; transition: width 0.3s ease; width: 0%; }
+        .round-info { font-size: 18px; color: #555; margin-bottom: 25px; font-weight: 500; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .image-option { aspect-ratio: 4/3; border-radius: 15px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; border: 3px solid transparent; position: relative; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .image-option:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); }
+        .image-option.selected { border-color: #8B4513; transform: scale(0.95); }
+        .image-option.selected::after { content: '✓'; position: absolute; top: 10px; right: 10px; background: #8B4513; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; z-index: 10; }
+        .loading-placeholder { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .next-btn { background: linear-gradient(135deg, #8B4513 0%, #D2B48C 100%); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; opacity: 0.5; pointer-events: none; }
+        .next-btn.enabled { opacity: 1; pointer-events: auto; }
+        .next-btn:hover.enabled { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(139, 69, 19, 0.3); }
+        .selection-counter { font-size: 14px; color: #666; margin-bottom: 15px; }
+        .result { display: none; text-align: left; }
+        .result.show { display: block; }
+        .result-title { font-size: 24px; color: #333; margin-bottom: 20px; text-align: center; }
+        .color-analysis { background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .color-item { display: flex; align-items: center; margin-bottom: 15px; padding: 15px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+        .color-sample { width: 60px; height: 45px; border-radius: 8px; margin-right: 15px; border: 2px solid #ddd; background-size: cover; background-position: center; }
+        .color-info { flex: 1; }
+        .color-name { font-weight: bold; color: #333; font-size: 16px; }
+        .color-percentage { color: #666; font-size: 14px; margin-top: 3px; }
+        .color-description { color: #888; font-size: 12px; margin-top: 5px; font-style: italic; }
+        .selection-log { background: #fff; border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: left; }
+        .selection-log h3 { color: #333; margin-bottom: 15px; font-size: 18px; }
+        .round-selections { margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .round-title { font-weight: bold; color: #555; margin-bottom: 8px; }
+        .selected-images { display: flex; flex-wrap: wrap; gap: 8px; }
+        .selected-image-thumbnail { width: 160px; height: 120px; object-fit: cover; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s ease; }
+        .selected-image-thumbnail:hover { transform: scale(1.05); }
+        .restart-btn { background: #6c757d; color: white; border: none; padding: 12px 30px; border-radius: 20px; font-size: 14px; cursor: pointer; margin-top: 10px; transition: all 0.3s ease; }
+        .restart-btn:hover { background: #5a6268; transform: translateY(-1px); }
+        .user-info-form { background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .user-info-form h3 { color: #333; margin-bottom: 15px; font-size: 18px; text-align: left; }
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; text-align: left; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 5px; font-size: 14px; color: #555; }
+        .form-group input, .form-group select { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; }
+        .full-width { grid-column: 1 / -1; }
+        .result-actions { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .action-btn { background: #8B4513; color: white; border: none; padding: 12px 30px; border-radius: 20px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; }
+        .action-btn:hover { background: #A0522D; transform: translateY(-1px); }
+        
+        /* 【修改】移除會改變九宮格的設定 */
+        @media (max-width: 768px) { .container { padding: 20px; } .title { font-size: 24px; } }
+        /* 【修改】在小螢幕上縮小間距，讓九宮格更適配 */
+        @media (max-width: 480px) { .grid { gap: 8px; } .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🏠 色系偏好測試</h1>
+            <p class="subtitle">請選擇您最喜歡的室內設計風格（可多選）</p>
+            <div class="multi-select-hint">💡 每輪可以選擇多張喜歡的圖片，至少選擇1張才能進入下一輪</div>
+        </div>
+
+        <div id="game-area">
+            <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+            <div class="round-info" id="round-info">第 1 輪 / 3 輪</div>
+            <div class="selection-counter" id="selection-counter">已選擇 0 張圖片</div>
+            <div class="grid" id="image-grid"></div>
+            <button class="next-btn" id="next-btn" onclick="nextRound()">下一輪</button>
+        </div>
+
+        <div class="result" id="result-area">
+            <h2 class="result-title">🎯 您的色系偏好分析</h2>
+            <div class="color-analysis" id="color-analysis"></div>
+            <div class="selection-log" id="selection-log">
+                <h3>📋 您的選擇記錄</h3>
+                <div id="selection-details"></div>
+            </div>
+            
+            <div class="user-info-form">
+                <h3>📝 客戶資料記錄</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label for="info-name">名字</label><input type="text" id="info-name"></div>
+                    <div class="form-group"><label for="info-project">案場</label><input type="text" id="info-project"></div>
+                    <div class="form-group"><label for="info-age">年齡</label><input type="number" id="info-age"></div>
+                    <div class="form-group"><label for="info-gender">性別</label><select id="info-gender"><option value="不透露">不透露</option><option value="男性">男性</option><option value="女性">女性</option></select></div>
+                    <div class="form-group full-width"><label for="info-date">日期</label><input type="date" id="info-date"></div>
+                </div>
+            </div>
+
+            <div class="result-actions">
+                <button class="action-btn" onclick="handleShareLink()">🔗 複製分享連結</button>
+                <button class="action-btn" onclick="handleDownloadResult()">📥 下載結果網頁</button>
+                <button class="restart-btn" onclick="restart()">🔄 重新測試</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const interiorSchemes = {
+            creamy: { name: '奶油色系', englishName: 'Creamy Neutrals', images: ['https://i.postimg.cc/sgRVMGqN/1.png','https://i.postimg.cc/bwHqkNjN/2.png','https://i.postimg.cc/cJx0mys7/3.png','https://i.postimg.cc/PqShV3xg/4.png','https://i.postimg.cc/G2NRd4vz/5.png'], sampleImage: 'https://i.postimg.cc/PqShV3xg/4.png' },
+            wood: { name: '木植色系', englishName: 'Natural Wood Tones', images: ['https://i.postimg.cc/vBSYTqwr/1.png','https://i.postimg.cc/d3kqy2Jz/2.png','https://i.postimg.cc/0jT9dzQr/3.png','https://i.postimg.cc/v8k8dNzM/4.png','https://i.postimg.cc/FsSrFVWS/5.png'], sampleImage: 'https://i.postimg.cc/vBSYTqwr/1.png' },
+            earth: { name: '大地色系', englishName: 'Earthy Tones', images: ['https://i.postimg.cc/FR1vMyk7/1.png','https://i.postimg.cc/hvdBjKrn/2.png','https://i.postimg.cc/141ZVbCq/3.png','https://i.postimg.cc/Y2GGggDr/4.png','https://i.postimg.cc/dQb791g8/5.png'], sampleImage: 'https://i.postimg.cc/hvdBjKrn/2.png' },
+            neutral: { name: '中性系', englishName: 'Neutrals', images: ['https://i.postimg.cc/wTD14zdn/1.png','https://i.postimg.cc/YCkhJPr0/2.png','https://i.postimg.cc/3xBd7ZNB/3.png','https://i.postimg.cc/fbRkb00h/4.png','https://i.postimg.cc/432yHNzH/5.png'], sampleImage: 'https://i.postimg.cc/432yHNzH/5.png' },
+            luxe: { name: '明亮輕奢系', englishName: 'Luxe Neutrals', images: ['https://i.postimg.cc/76THC1Hj/1.png','https://i.postimg.cc/1Xh9Dg4X/2.png','https://i.postimg.cc/3NX31KDB/3.png','https://i.postimg.cc/fWmWDvg9/4.png','https://i.postimg.cc/fTszL06g/5.png'], sampleImage: 'https://i.postimg.cc/3NX31KDB/3.png' },
+            morandi: { name: '莫蘭迪色系', englishName: 'Muted Morandi Tones', images: ['https://i.postimg.cc/XJZJfS8H/1.png','https://i.postimg.cc/qR97QbDk/2.png','https://i.postimg.cc/cCwLzRPf/3.png','https://i.postimg.cc/nVDrMxMM/4.png','https://i.postimg.cc/Hs1xyN7z/5.png'], sampleImage: 'https://i.postimg.cc/Hs1xyN7z/5.png' },
+            industrial: { name: '工業灰系', englishName: 'Industrial Grays', images: ['https://i.postimg.cc/Jzwhj2DK/1.png','https://i.postimg.cc/6pdpcfCK/2.png','https://i.postimg.cc/5tgNd9Pk/3.png','https://i.postimg.cc/C1KMFyXM/4.png','https://i.postimg.cc/SKkNvYGM/5.png'], sampleImage: 'https://i.postimg.cc/5tgNd9Pk/3.png' },
+            cooldeep: { name: '冷色簡約系', englishName: 'Deep Cool Tones', images: ['https://i.postimg.cc/L6VHZ8S4/1.png','https://i.postimg.cc/Z5KJPzY8/2.png','https://i.postimg.cc/Gm7dqg9Z/3.png','https://i.postimg.cc/zfy5Mwg3/4.png','https://i.postimg.cc/5tD1MHBg/5.png'], sampleImage: 'https://i.postimg.cc/L6VHZ8S4/1.png' },
+            retro: { name: '復古飽和系', englishName: 'Retro Rich Tones', images: ['https://i.postimg.cc/TYjPqcV6/1.png','https://i.postimg.cc/HkpkS7z7/2.png','https://i.postimg.cc/L8N6G6QQ/3.png','https://i.postimg.cc/fbyTsn6z/4.png','https://i.postimg.cc/hGY4PZB9/5.png'], sampleImage: 'https://i.postimg.cc/HkpkS7z7/2.png' }
+        };
+        // 省略了 interiorSchemes 的詳細內容以縮短篇幅，實際代碼中應為完整版
+
+        let currentRound = 1;
+        let totalRounds = 3;
+        let selectedChoices = [];
+        let colorPreferences = {};
+        let currentRoundSelections = [];
+        let shuffledImageDeck = [];
+
+        Object.keys(interiorSchemes).forEach(scheme => { colorPreferences[scheme] = 0; });
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function prepareImageDeck() {
+            const fullDeck = [];
+            Object.keys(interiorSchemes).forEach(schemeKey => {
+                const schemeData = interiorSchemes[schemeKey];
+                schemeData.images.forEach(imageUrl => {
+                    fullDeck.push({ scheme: schemeKey, imageUrl: imageUrl, name: schemeData.name, englishName: schemeData.englishName });
+                });
+            });
+            shuffleArray(fullDeck);
+            shuffledImageDeck = fullDeck;
+        }
+
+        function generateInteriorOptions() {
+            const startIndex = (currentRound - 1) * 9;
+            const endIndex = startIndex + 9;
+            return shuffledImageDeck.slice(startIndex, endIndex);
+        }
+
+        function createInteriorElement(option, index) {
+            const div = document.createElement('div');
+            div.className = 'image-option loading-placeholder';
+            div.dataset.scheme = option.scheme;
+            div.dataset.imageName = option.name;
+            div.dataset.imageUrl = option.imageUrl;
+            div.textContent = '載入中...';
+            const img = new Image();
+            img.onload = () => { div.style.backgroundImage = `url(${option.imageUrl})`; div.classList.remove('loading-placeholder'); div.textContent = ''; };
+            img.onerror = () => { div.textContent = '圖片載入失敗'; div.style.background = '#eee'; };
+            img.src = option.imageUrl;
+            div.onclick = () => toggleImageSelection(div);
+            return div;
+        }
+
+        function toggleImageSelection(element) {
+            const scheme = element.dataset.scheme;
+            const imageName = element.dataset.imageName;
+            const imageUrl = element.dataset.imageUrl;
+            if (element.classList.contains('selected')) {
+                element.classList.remove('selected');
+                currentRoundSelections = currentRoundSelections.filter(s => s.element !== element);
+            } else {
+                element.classList.add('selected');
+                currentRoundSelections.push({ element, scheme, imageName, imageUrl });
+            }
+            updateSelectionCounter();
+            updateNextButton();
+        }
+
+        function updateSelectionCounter() { document.getElementById('selection-counter').textContent = `已選擇 ${currentRoundSelections.length} 張圖片`; }
+        function updateNextButton() { document.getElementById('next-btn').classList.toggle('enabled', currentRoundSelections.length > 0); }
+
+        function nextRound() {
+            if (currentRoundSelections.length === 0) return;
+            const roundChoices = currentRoundSelections.map(s => ({ scheme: s.scheme, imageName: s.imageName, imageUrl: s.imageUrl }));
+            selectedChoices.push({ round: currentRound, choices: roundChoices });
+            currentRoundSelections.forEach(s => { colorPreferences[s.scheme]++; });
+            if (currentRound < totalRounds) { currentRound++; startRound(); } else { showResult(); }
+        }
+        
+        function showResult(sharedData = null) {
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('result-area').classList.add('show');
+            const analysisContainer = document.getElementById('color-analysis');
+            analysisContainer.innerHTML = '';
+            const detailsContainer = document.getElementById('selection-details');
+            detailsContainer.innerHTML = '';
+            const prefs = sharedData ? sharedData.preferences : colorPreferences;
+            const choices = sharedData ? sharedData.choices : selectedChoices;
+            if(sharedData && sharedData.userInfo) {
+                document.getElementById('info-name').value = sharedData.userInfo.name;
+                document.getElementById('info-project').value = sharedData.userInfo.project;
+                document.getElementById('info-age').value = sharedData.userInfo.age;
+                document.getElementById('info-gender').value = sharedData.userInfo.gender;
+                document.getElementById('info-date').value = sharedData.userInfo.date;
+            } else {
+                document.getElementById('info-date').value = new Date().toISOString().split('T')[0];
+            }
+            const sortedPreferences = Object.entries(prefs).sort((a, b) => b[1] - a[1]);
+            const totalSelections = Object.values(prefs).reduce((sum, count) => sum + count, 0);
+            const filteredPreferences = sortedPreferences.filter(([scheme, count]) => count > 0);
+            filteredPreferences.forEach(([scheme, count]) => {
+                const schemeData = interiorSchemes[scheme];
+                if (!schemeData) return;
+                const percentage = totalSelections > 0 ? ((count / totalSelections) * 100).toFixed(1) : 0;
+                const colorItem = document.createElement('div');
+                colorItem.className = 'color-item';
+                colorItem.innerHTML = `<div class="color-sample" style="background-image: url('${schemeData.sampleImage}');"></div><div class="color-info"><div class="color-name">${schemeData.name} (${schemeData.englishName})</div><div class="color-percentage">選擇佔比: ${percentage}% (${count}次)</div></div>`;
+                analysisContainer.appendChild(colorItem);
+            });
+            choices.forEach(roundData => {
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round-selections';
+                roundDiv.innerHTML = `<div class="round-title">第 ${roundData.round} 輪選擇:</div>`;
+                const imagesDiv = document.createElement('div');
+                imagesDiv.className = 'selected-images';
+                roundData.choices.forEach(choice => {
+                    imagesDiv.innerHTML += `<img class="selected-image-thumbnail" src="${choice.imageUrl}" title="${choice.imageName}">`;
+                });
+                roundDiv.appendChild(imagesDiv);
+                detailsContainer.appendChild(roundDiv);
+            });
+        }
+        
+        function startRound() {
+            const imageGrid = document.getElementById('image-grid');
+            const roundInfo = document.getElementById('round-info');
+            const progressBar = document.getElementById('progress-bar');
+            imageGrid.innerHTML = '';
+            currentRoundSelections = [];
+            updateSelectionCounter();
+            updateNextButton();
+            roundInfo.textContent = `第 ${currentRound} 輪 / ${totalRounds} 輪`;
+            progressBar.style.width = `${((currentRound - 1) / totalRounds) * 100}%`;
+            const options = generateInteriorOptions();
+            options.forEach((option) => {
+                const element = createInteriorElement(option);
+                imageGrid.appendChild(element);
+            });
+            if(currentRound === totalRounds) { document.getElementById('next-btn').textContent = '查看結果'; }
+        }
+        
+        function restart() {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            currentRound = 1;
+            selectedChoices = [];
+            Object.keys(interiorSchemes).forEach(scheme => { colorPreferences[scheme] = 0; });
+            document.getElementById('result-area').classList.remove('show');
+            document.getElementById('game-area').style.display = 'block';
+            document.getElementById('next-btn').textContent = '下一輪';
+            prepareImageDeck();
+            startRound();
+        }
+        
+        function getResultData() {
+            const userInfo = {
+                name: document.getElementById('info-name').value,
+                project: document.getElementById('info-project').value,
+                age: document.getElementById('info-age').value,
+                gender: document.getElementById('info-gender').value,
+                date: document.getElementById('info-date').value
+            };
+            return { userInfo: userInfo, preferences: colorPreferences, choices: selectedChoices };
+        }
+
+        function generateResultHTML(data) {
+            const styles = document.querySelector('style').innerHTML;
+            const sortedPreferences = Object.entries(data.preferences).sort((a, b) => b[1] - a[1]);
+            const totalSelections = Object.values(data.preferences).reduce((sum, count) => sum + count, 0);
+            const filteredPreferences = sortedPreferences.filter(([scheme, count]) => count > 0);
+            const analysisHTML = filteredPreferences.map(([scheme, count]) => {
+                const schemeData = interiorSchemes[scheme];
+                if (!schemeData) return '';
+                const percentage = totalSelections > 0 ? ((count / totalSelections) * 100).toFixed(1) : 0;
+                return `<div class="color-item">
+                    <div class="color-sample" style="background-image: url('${schemeData.sampleImage}');"></div>
+                    <div class="color-info">
+                        <div class="color-name">${schemeData.name} (${schemeData.englishName})</div>
+                        <div class="color-percentage">選擇佔比: ${percentage}% (${count}次)</div>
+                    </div>
+                </div>`;
+            }).join('');
+            const choicesHTML = data.choices.map(roundData => {
+                const imagesHTML = roundData.choices.map(choice => 
+                    `<img class="selected-image-thumbnail" src="${choice.imageUrl}" title="${choice.imageName}">`
+                ).join('');
+                return `<div class="round-selections">
+                    <div class="round-title">第 ${roundData.round} 輪選擇:</div>
+                    <div class="selected-images">${imagesHTML}</div>
+                </div>`;
+            }).join('');
+            const userInfoHTML = `<div class="user-info-form">
+                <h3>📝 客戶資料記錄</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>名字</label><input type="text" value="${data.userInfo.name}" disabled></div>
+                    <div class="form-group"><label>案場</label><input type="text" value="${data.userInfo.project}" disabled></div>
+                    <div class="form-group"><label>年齡</label><input type="number" value="${data.userInfo.age}" disabled></div>
+                    <div class="form-group"><label>性別</label><input type="text" value="${data.userInfo.gender}" disabled></div>
+                    <div class="form-group full-width"><label>日期</label><input type="date" value="${data.userInfo.date}" disabled></div>
+                </div>
+            </div>`;
+            return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>色系偏好分析結果 - ${data.userInfo.name || '客戶'}</title>
+    <style>${styles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="result show">
+            <h2 class="result-title">🎯 色系偏好分析</h2>
+            <div class="color-analysis">${analysisHTML}</div>
+            <div class="selection-log">
+                <h3>📋 選擇記錄</h3>
+                <div id="selection-details">${choicesHTML}</div>
+            </div>
+            ${userInfoHTML}
+        </div>
+    </div>
+</body>
+</html>`;
+        }
+        
+        function handleDownloadResult() {
+            const data = getResultData();
+            if (!data.userInfo.name && !data.userInfo.project) {
+                alert('請至少填寫「名字」或「案場」以便存檔。');
+                return;
+            }
+            const htmlContent = generateResultHTML(data);
+//先下載
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const fileName = `色系偏好結果-${data.userInfo.date}-${data.userInfo.name || data.userInfo.project}.html`;
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        
+//再自動寄信
+	sendResultEmail(htmlContent);
+}
+
+// 自動寄信
+    	function sendResultEmail(htmlcontent){
+	emailjs.send("service_xlk6s0u","template_54mrzij",{
+        to_email: "jola83725@rs11.page",
+        subject: `色系偏好結果 - ${data.userInfo.name || "客戶"}`,
+        message_html: htmlContent
+    }).then(response => {
+        console.log("寄信成功", response.status, response.text);
+    }, error => {
+        console.error("寄信失敗", error);
+    });
+}
+
+        // 【修改】恢復分享連結功能並使用更穩定的編碼方式
+        function handleShareLink() {
+            const data = getResultData();
+            const jsonString = JSON.stringify(data);
+            // 使用新的標準編碼方式，避免亂碼和毀損
+            const encodedData = encodeURIComponent(jsonString);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?result=${encodedData}`;
+
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                const shareButton = document.querySelector('.action-btn[onclick="handleShareLink()"]');
+                const originalText = shareButton.textContent;
+                shareButton.textContent = '✅ 已複製！';
+                setTimeout(() => { shareButton.textContent = originalText; }, 2000);
+            }).catch(err => {
+                alert('複製失敗，您的瀏覽器可能不支援此功能。');
+                console.error('複製失敗:', err);
+            });
+        }
+        
+        // 【修改】恢復頁面載入時的連結解析功能
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const resultData = urlParams.get('result');
+
+            if (resultData) {
+                try {
+                    // 使用新的標準解碼方式
+                    const decodedString = decodeURIComponent(resultData);
+                    const sharedData = JSON.parse(decodedString);
+                    showResult(sharedData);
+                } catch (e) {
+                    console.error("無法解析分享的結果:", e);
+                    alert("分享連結無效或已損毀，將開始新的測驗。");
+                    prepareImageDeck();
+                    startRound();
+                }
+            } else {
+                prepareImageDeck();
+                startRound();
+            }
+        };
+    </script>
+</body>
+</html>
